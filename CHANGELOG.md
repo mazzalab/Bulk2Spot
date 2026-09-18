@@ -16,6 +16,7 @@ First public version, generalized from an internal GeoMx pipeline.
 - Tutorial on NanoString's public WTA kidney dataset, with a download script.
 - Documentation: installation, usage, configuration, outputs, methods.
 - Example outputs from the tutorial run in `examples/` (report, figures, summary tables).
+- Bulk2Spot logo (`docs/images/`), shown in the README and in the HTML report's header and favicon.
 
 ### Changed (compared with the internal pipeline)
 - All paths are configurable or relative to the repository; there are no site-specific paths.

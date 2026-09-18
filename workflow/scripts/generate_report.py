@@ -9,6 +9,7 @@ correction), shown next to the final PCA/UMAP exported by stage 3.
 from __future__ import annotations
 
 import argparse
+import base64
 import html
 import re
 from datetime import datetime
@@ -45,7 +46,28 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
                     help="Comma-separated metadata columns in proportions.txt that are NOT cell types "
                          "(config deconvolution.export_columns' keys, plus ROI) -- everything else in "
                          "that table is treated as a cell-type column.")
+    p.add_argument("--logo", default=None, help="Bulk2Spot logo mark (SVG), shown in the header and as favicon")
     return p.parse_args(argv)
+
+
+# Colours of docs/images/logo-mark.svg, swapped for CSS classes when the mark is
+# inlined so it follows the report's light/dark theme.
+LOGO_MAIN_FILL = 'fill="#0E7C7B"'
+LOGO_ACCENT_FILL = 'fill="#F2994A"'
+
+
+def load_logo(path: Optional[str]) -> tuple:
+    """Return (inline header SVG, favicon <link>), or empty strings if there is no logo."""
+    if not path or not Path(path).is_file():
+        return "", ""
+    svg = Path(path).read_text(encoding="utf-8")
+    favicon = ('<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,'
+               + base64.b64encode(svg.encode("utf-8")).decode("ascii") + '">')
+    inline = re.sub(r"<title>.*?</title>\s*", "", svg, flags=re.S).strip()
+    inline = re.sub(r'\s(?:width|height|role|aria-label)="[^"]*"', "", inline)
+    inline = inline.replace("<svg ", '<svg class="b2s-logo" aria-hidden="true" focusable="false" ', 1)
+    inline = inline.replace(LOGO_MAIN_FILL, 'class="b2s-logo-main"').replace(LOGO_ACCENT_FILL, 'class="b2s-logo-accent"')
+    return inline, favicon
 
 
 def read_table(path, **kwargs):
@@ -454,6 +476,10 @@ dl.glossary dt { font-weight: 700; font-family: var(--sans); margin-top: .9rem; 
 dl.glossary dd { margin: .2rem 0 0; color: var(--muted); }
 .header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
 .header-text { flex: 1; min-width: 0; }
+.brand { display: flex; align-items: center; gap: .55rem; }
+.b2s-logo { width: 34px; height: 34px; flex: none; }
+.b2s-logo-main { fill: var(--accent); }
+.b2s-logo-accent { fill: #e8914a; }
 .theme-toggle {
   font-family: var(--sans); font-size: .78rem; font-weight: 600; white-space: nowrap;
   background: var(--card); color: var(--fg); border: 1px solid var(--border);
@@ -656,13 +682,14 @@ def build_html(args: argparse.Namespace) -> str:
     deconv_toc = '<a href="#deconv">Deconvolution</a>' if deconv_dir else ""
 
     generated = datetime.now().strftime("%Y-%m-%d %H:%M")
+    logo_svg, favicon = load_logo(args.logo)
     sections: List[str] = []
 
     # ---------------------------------------------------------------- header
     sections.append(f"""
 <div class="header-row">
 <div class="header-text">
-<p class="eyebrow">Bulk2Spot &middot; GeoMx DSP spatial transcriptomics report</p>
+<div class="brand">{logo_svg}<p class="eyebrow">Bulk2Spot &middot; GeoMx DSP spatial transcriptomics report</p></div>
 <h1>{html.escape(args.project_name)}</h1>
 <p class="subtitle">Segment/probe QC &middot; Q3 normalization &middot; SpatialExperiment &middot; limma-voom DEG &middot; GO/KEGG GSEA</p>
 <p class="meta">Generated {generated}</p>
@@ -910,6 +937,7 @@ Plots are interactive: hover for detail, drag to zoom, double-click to reset, cl
 <script>{THEME_SCRIPT}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{html.escape(args.project_name)} &mdash; Bulk2Spot report</title>
+{favicon}
 <style>{CSS}</style>
 {plotlyjs_script}
 </head><body>

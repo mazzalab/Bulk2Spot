@@ -1,4 +1,9 @@
-<h1 align="center">Bulk2Spot</h1>
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.svg">
+    <img alt="Bulk2Spot" src="docs/images/logo.svg" width="440">
+  </picture>
+</h1>
 
 <p align="center">
   <em>From GeoMx DSP raw counts to spatially resolved biology, in one reproducible workflow.</em>

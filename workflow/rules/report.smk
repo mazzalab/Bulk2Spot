@@ -23,6 +23,7 @@ rule html_report:
         deconv_gsva_stats_dir=rules.deconvolution_gsva.output.gsva_stats_dir if WITH_DECONV else [],
         # Anchored to the repo, not the launch directory
         script=os.path.join(workflow.basedir, "workflow/scripts/generate_report.py"),
+        logo=os.path.join(workflow.basedir, "docs/images/logo-mark.svg"),
     output:
         html=REPORT_DIR + "/bulk2spot_report.html",
     params:
@@ -55,5 +56,6 @@ rule html_report:
             {params.batch_flag} \
             {params.deconv_flag} \
             --deconv-id-cols "{params.deconv_id_cols}" \
+            --logo {input.logo} \
             --output {output.html} > {log} 2>&1
         """
