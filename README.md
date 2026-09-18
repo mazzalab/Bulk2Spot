@@ -5,6 +5,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/mazzalab/Bulk2Spot/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/mazzalab/Bulk2Spot/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Snakemake" src="https://img.shields.io/badge/snakemake-7.32.4-039475">
   <img alt="R" src="https://img.shields.io/badge/R-4.3-276DC3">
   <img alt="Bioconductor" src="https://img.shields.io/badge/Bioconductor-3.18-1a81c2">

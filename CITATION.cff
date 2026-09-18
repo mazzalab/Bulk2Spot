@@ -7,9 +7,7 @@ abstract: >-
   differential expression, GO/KEGG gene set enrichment, SpatialDecon cell-type
   deconvolution and GSVA signature scoring, into a self-contained HTML report.
 authors:
-  - family-names: "<Surname>"
-    given-names: "<Name>"
-# Add all contributors before publishing.
+  - name: "The Bulk2Spot authors"
 version: 0.1.0
 license: MIT
 repository-code: "https://github.com/mazzalab/Bulk2Spot"
