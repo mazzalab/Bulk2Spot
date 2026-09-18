@@ -1,0 +1,40 @@
+# Lightweight checks on every push / pull request: syntax of all scripts and a
+# Snakemake dry-run of the tutorial (no analysis environments are built).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}   # login shell, so the micromamba environment is active
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Launcher environment
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: environment.yml
+          cache-environment: true
+
+      - name: R (for script syntax checks)
+        uses: r-lib/actions/setup-r@v2
+
+      - name: Python syntax
+        run: python -m py_compile run.py workflow/scripts/generate_report.py
+
+      - name: R syntax
+        run: for f in workflow/scripts/*.R; do Rscript -e "invisible(parse('$f'))"; done
+
+      - name: Shell syntax
+        run: bash -n tests/tutorial/download_tutorial_data.sh workflow/envs/bulk2spot.post-deploy.sh
+
+      - name: Tutorial dry-run
+        run: |
+          tests/tutorial/download_tutorial_data.sh
+          ./run.py -w report -c tests/tutorial/config_tutorial.yaml -n

@@ -1,0 +1,252 @@
+# =============================================================================
+# Bulk2Spot TUTORIAL / SMOKE-TEST CONFIG
+#
+# NanoString's public WTA kidney demo dataset (Diabetic Kidney Disease [DKD]
+# vs normal) -- the dataset used in Bioconductor's "Analyzing GeoMx-NGS RNA
+# Expression Data with GeomxTools" vignette. 239 segments across 8 tissue
+# slides, 3 segment types (Geometric Segment, PanCK+, PanCK-).
+#
+# From the repository root:
+#   tests/tutorial/download_tutorial_data.sh
+#   ./run.py -w report -c tests/tutorial/config_tutorial.yaml -q 8
+#   (or on a PBS cluster: ... -cl -qu workq -j 8)
+#
+# This is config/config.yaml with only the raw-data paths, annotation schema,
+# QC thresholds and the comparisons/segments/spe/deconvolution sections adapted
+# to this dataset's real annotation columns. Paths are relative to the
+# repository root.
+# =============================================================================
+
+outputdir: "tests/tutorial/output"
+project_name: "bulk2spot_tutorial_kidney"
+
+# E-mail notifications are left off in this shared tutorial config.
+# notify_email: "you@institution.org"
+
+conda_envs:
+  analysis: ""
+  report: ""
+
+## ############################################################################
+## SECTION 1 - RAW DATA INPUTS
+## ############################################################################
+
+dcc_dir: "tests/tutorial/data/dccs"
+pkc_file: "tests/tutorial/data/pkcs/Hsa_WTA_v1.0.pkc"
+annotation_file: "tests/tutorial/data/annotation/kidney_AOI_Annotations_all_vignette.xlsx"
+annotation_sheet: "Template"
+
+exclude_dcc_files: []
+
+annotation:
+  pheno_data_dcc_colname: "Sample_ID"
+  # Real columns in this annotation workbook: Sample_ID, panel, slide name,
+  # class, roi, segment, aoi, area, region, pathology, nuclei.
+  protocol_data_colnames: ["aoi", "roi", "region", "pathology"]
+  experiment_data_colnames: null
+  # Real annotation column is lowercase "segment" -- copied to "Segment"
+  # right after loading (standR's functions expect that exact name).
+  segment_column: "segment"
+
+## ############################################################################
+## SECTION 2 - SEGMENT QC
+## ############################################################################
+
+segment_qc:
+  use_da_logic: true
+  minSegmentReads: 1000
+  percentTrimmed: 80
+  percentStitched: 80
+  percentAligned: 80
+  percentSaturation: 50
+  # Loosened from config/config.yaml's defaults (10 / 1000) based on this
+  # dataset's real distributions: negative-control mean counts per segment
+  # range 1-50 (median 6.4) and NTC counts reach 8704, so the template's
+  # stricter defaults would fail >85% of segments here. QC thresholds are
+  # dataset/panel-specific -- always check your own distributions first.
+  minNegativeCount: 2
+  maxNTCCount: 9000
+  minNuclei: 20
+  minArea: 5000
+  # This dataset includes 4 "No Template Control" segments (no tissue), which
+  # are expected to fail segment QC -- remove them rather than carry
+  # NA-valued segments (no class/segment/region) into later stages.
+  remove_flagged_segments: true
+
+## ############################################################################
+## SECTION 3 - PROBE QC
+## ############################################################################
+
+probe_qc:
+  minProbeRatio: 0.1
+  percentFailGrubbs: 20
+  removeLocalOutliers: false
+
+## ############################################################################
+## SECTION 4 - LIMIT OF QUANTIFICATION (LOQ)
+## ############################################################################
+
+loq:
+  cutoff: 2
+  minLOQ: 2
+
+## ############################################################################
+## SECTION 5 - SEGMENT / GENE FILTERING
+## ############################################################################
+
+gene_filtering:
+  segment_detection_rate_min: 0
+  gene_detection_rate_min: 0.1
+  detection_thresholds_pct: [1, 5, 10, 20, 30, 50]
+  detection_thresholds_frac: [0.01, 0.05, 0.1, 0.2, 0.3, 0.5]
+  detection_breaks: [0, 0.01, 0.05, 0.1, 0.15, 1]
+  detection_labels: ["<1%", "1-5%", "5-10%", "10-15%", ">15%"]
+
+## ############################################################################
+## SECTION 6 - NORMALIZATION (Q3, used by `preprocess`)
+## ############################################################################
+
+normalization:
+  method: "quant"
+  desired_quantile: 0.75
+
+## ############################################################################
+## SECTION 7 - SpatialExperiment CONVERSION (used by `spe`)
+## ############################################################################
+
+spe:
+  negative_probe_source_name: "Negative Probe"
+  negative_probe_target_name: "NegProbe-WTX"
+  # "slide name" (real column) becomes "slide.name" in the SpatialExperiment.
+  # Each slide is one tissue subject here, and the dataset has no separate
+  # scan identifier, so Scan and Patient are derived from the same column --
+  # a limitation of this dataset, not a bug.
+  patient_source_column: "slide.name"
+  scan_id_column: "slide.name"
+  biology_columns: ["class", "Segment"]
+  biology_separator: "_"
+  use_real_coordinates: false
+  coordinate_x_column: null
+  coordinate_y_column: null
+
+## ############################################################################
+## SECTION 8 - QC DIAGNOSTICS + BATCH CORRECTION (used by `batch`)
+## ############################################################################
+
+normalization_standR:
+  method: "TMM"
+
+dimensionality_reduction:
+  seed: 100
+
+batch_correction:
+  # No genuinely independent batch variable exists in this dataset (each
+  # slide is essentially 1:1 with disease class, so using it as batch would
+  # confound batch with biology, which breaks RUV4's core assumption) -- left
+  # off. This also exercises the "batch correction skipped" code path.
+  perform: false
+  batch_column: "Batch"
+  factor_of_interest: "class"
+  ncg_top_n: 100
+  k: "auto"
+  apply_limma_residual_correction: true
+
+## ############################################################################
+## SECTION 9 - DEG / GSEA (used by `deg`)
+## ############################################################################
+
+comparisons:
+  # Biological grouping variable of this dataset (DKD vs normal)
+  column: "class"
+  mode: "all_pairs"
+  include_levels: []
+  exclude_levels: []
+  min_samples_per_group: 2
+  manual_pairs: {}
+
+# Segment types present in this dataset
+segments:
+  - "Geometric Segment"
+  - "PanCK+"
+  - "PanCK-"
+
+design:
+  temp_column_name: "coltest"
+  include_ruv_factors: false
+
+thresholds:
+  p_cutoff: 0.1
+  fc_soft: 0.57
+  fc_hard: 1.5
+  top_genes_volcano: 15
+  gsea_gene_pvalue_filter: 0.05
+  gsea_pvalue_cutoff: 0.05
+  pathway_padj_cutoff: 0.1
+  top_n_pathways: 7
+
+enrichment:
+  organism_db: "org.Hs.eg.db"
+  ontology: "BP"
+  kegg_organism: "hsa"
+
+## ############################################################################
+## SECTION 10 - PLOTTING
+## ############################################################################
+
+plotting:
+  col_by: "Segment"
+  segment: {}
+
+plot:
+  volcano_xlim: [-4, 4]
+  volcano_ylim: [0, 11]
+
+## ############################################################################
+## SECTION 11 - DECONVOLUTION (used by `deconv`)
+## ############################################################################
+
+deconvolution:
+  run:
+    batch_corrected: false     # matches batch_correction.perform: false above
+    no_batch_correction: true
+    export_cibersort: true
+
+  signature:
+    data_name: "safeTME"
+    cell_types_subset: []
+
+  ruv_prefix: "ruv_"
+
+  export_columns:
+    segment: "Segment"
+    class: "class"
+
+deconvolution_stats:
+  grouping_columns:
+    - "class"
+  alpha: 0.05
+  plots_per_page: 6
+
+  # PanCK+ (epithelium) vs PanCK- (everything else in the AOI: stroma, immune
+  # ...) on total T-cell and myeloid infiltration. PanCK marks epithelium, not
+  # an immune population, so no direction is assumed: "two.sided" for both.
+  segment_pair_comparison:
+    enabled: true
+    segments: ["PanCK-", "PanCK+"]
+    cell_type_groups:
+      T_cells: ["T.CD4.memory", "T.CD4.naive", "T.CD8.memory", "T.CD8.naive", "Treg"]
+      Myeloid: ["macrophages", "monocytes.C", "monocytes.NC.I", "mDCs"]
+    test_alternative:
+      T_cells: "two.sided"
+      Myeloid: "two.sided"
+
+deconvolution_gsva:
+  signature_file: "resources/signatures/Jerby_Arnon_signature.xlsx"
+  signature_start_row: 2
+  method: "gsva"
+  kcdf: "Poisson"
+  min_sz: 3
+  max_sz: 500
+  segment_test_enabled: true
+  heatmap_annotation_columns: ["Segment", "class"]
+  heatmap_scale: "row"

@@ -1,0 +1,77 @@
+# Analysis environment for all R stages (01-07_*.R).
+#
+# Snakemake builds it automatically with --use-conda. If
+# bulk2spot.linux-64.pin.txt exists next to this file, Snakemake installs the
+# exact, tested package set from it and only falls back to solving this YAML
+# if that fails. After creation, bulk2spot.post-deploy.sh installs standR,
+# which is not distributed through conda.
+name: bulk2spot
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - r-base=4.3
+
+  # Build tools (needed to compile standR and a few CRAN packages)
+  - c-compiler
+  - cxx-compiler
+  - make
+
+  # CRAN
+  - r-tidyverse
+  - r-yaml
+  - r-openxlsx
+  - r-readxl
+  - r-ggplot2
+  - r-ggalluvial
+  - r-ggsci
+  - r-ggrepel
+  - r-ggpubr
+  - r-ggsignif
+  - r-cowplot
+  - r-gridextra
+  - r-patchwork>=1.2.0   # older versions crash with ggplot2 >= 3.5 in wrap_plots()
+  - r-pheatmap
+  - r-rcolorbrewer
+  - r-scales
+  - r-reshape2
+  - r-broom
+  - r-rstatix
+  - r-knitr
+  - r-umap
+  - r-cluster            # used by standR::findBestK()
+  - r-biocmanager
+  - r-remotes
+  # standR dependencies that must be present before it is installed
+  - r-mclustcomp
+  - r-rcpp
+  - r-rcpparmadillo
+  - r-locfit
+  - r-igraph
+  - r-rspectra
+  - r-rtsne
+  - r-ggforce
+  - r-magick
+  - r-interp
+  - r-jpeg
+  - r-rsqlite
+
+  # Bioconductor
+  - bioconductor-geomxtools
+  - bioconductor-nanostringnctools
+  - bioconductor-spatialexperiment
+  - bioconductor-singlecellexperiment
+  - bioconductor-summarizedexperiment
+  - bioconductor-s4vectors
+  - bioconductor-scater
+  - bioconductor-edger
+  - bioconductor-limma
+  - bioconductor-ruvseq
+  - bioconductor-edaseq
+  - bioconductor-biocparallel
+  - bioconductor-clusterprofiler
+  - bioconductor-annotationdbi
+  - bioconductor-org.hs.eg.db   # human; add bioconductor-org.mm.eg.db etc. for other organisms
+  - bioconductor-org.mm.eg.db
+  - bioconductor-spatialdecon
+  - bioconductor-gsva

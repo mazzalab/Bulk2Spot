@@ -1,0 +1,16 @@
+# Launcher environment: what you activate to run ./run.py.
+# The analysis software is NOT here -- Snakemake builds it per rule from
+# workflow/envs/ (see docs/installation.md).
+#
+#   conda env create -f environment.yml
+#   conda activate bulk2spot
+name: bulk2spot
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - snakemake-minimal=7.32.4
+  - pulp<2.8          # Snakemake 7.32 is incompatible with pulp >= 2.8
+  - setuptools<81     # Snakemake 7 still imports pkg_resources
+  - pyyaml

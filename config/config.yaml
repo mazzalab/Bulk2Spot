@@ -1,0 +1,238 @@
+# =============================================================================
+# Bulk2Spot -- project configuration template
+#
+# Copy this file for each project, then edit at least the entries marked TODO.
+# Relative paths are resolved from the directory you launch run.py from and,
+# if not found there, from the Bulk2Spot repository.
+# Full reference: docs/configuration.md
+# =============================================================================
+
+## ----------------------------------------------------------------------------
+## GENERAL
+## ----------------------------------------------------------------------------
+
+outputdir: "/path/to/project/output"          # TODO: results/ and logs/ are created here
+project_name: "my_project"                    # TODO: shown in the report and e-mails
+# notify_email: "you@institution.org"         # optional: e-mail on success/failure (needs `mail`)
+
+# Software environments. Leave empty to let Snakemake build them from
+# workflow/envs/*.yaml; or give the path/name of environments you already built.
+conda_envs:
+  analysis: ""                                # e.g. "/shared/condaEnvs/bulk2spot"
+  report: ""                                  # e.g. "/shared/condaEnvs/bulk2spot-report"
+
+## ----------------------------------------------------------------------------
+## 1. RAW DATA
+## ----------------------------------------------------------------------------
+
+dcc_dir: "/path/to/dccs"                      # TODO: folder with the .dcc files (searched recursively)
+pkc_file: "/path/to/panel.pkc"                # TODO: probe kit configuration (unzipped .pkc)
+annotation_file: "/path/to/annotation.xlsx"   # TODO: segment annotation workbook
+annotation_sheet: "Sheet1"                    # TODO: sheet inside the workbook
+
+exclude_dcc_files: []                         # DCC names (no extension) to drop, e.g. ["DSP-1001660015576-C-E09"]
+
+annotation:
+  pheno_data_dcc_colname: "Sample_ID"         # column matching each row to its DCC file name
+  protocol_data_colnames: ["roi"]             # technical per-segment columns (ROI/AOI ids ...)
+  experiment_data_colnames: null              # experiment-wide columns, or null
+  segment_column: "Segment"                   # column with the segment/AOI type (copied to "Segment")
+
+## ----------------------------------------------------------------------------
+## 2. SEGMENT QC (GeomxTools::setSegmentQCFlags)
+## Defaults are NanoString's starting points: always check them on your data.
+## ----------------------------------------------------------------------------
+
+segment_qc:
+  use_da_logic: true                          # shiftCountsOne(useDALogic)
+  minSegmentReads: 1000
+  percentTrimmed: 80
+  percentStitched: 80
+  percentAligned: 80
+  percentSaturation: 50
+  minNegativeCount: 10
+  maxNTCCount: 1000
+  minNuclei: 100
+  minArea: 5000                               # ignored if the annotation has no "area" values
+  remove_flagged_segments: false              # true = drop segments failing any QC flag
+
+## ----------------------------------------------------------------------------
+## 3. PROBE QC (GeomxTools::setBioProbeQCFlags)
+## ----------------------------------------------------------------------------
+
+probe_qc:
+  minProbeRatio: 0.1
+  percentFailGrubbs: 20
+  removeLocalOutliers: false
+
+## ----------------------------------------------------------------------------
+## 4. LIMIT OF QUANTIFICATION: LOQ = max(minLOQ, NegGeoMean * NegGeoSD ^ cutoff)
+## ----------------------------------------------------------------------------
+
+loq:
+  cutoff: 2
+  minLOQ: 2
+
+## ----------------------------------------------------------------------------
+## 5. SEGMENT / GENE FILTERING
+## ----------------------------------------------------------------------------
+
+gene_filtering:
+  segment_detection_rate_min: 0               # min fraction of genes > LOQ to keep a segment
+  gene_detection_rate_min: 0.1                # min fraction of segments where a gene is > LOQ
+  # Diagnostic plots only
+  detection_thresholds_pct: [1, 5, 10, 20, 30, 50]
+  detection_thresholds_frac: [0.01, 0.05, 0.1, 0.2, 0.3, 0.5]
+  detection_breaks: [0, 0.01, 0.05, 0.1, 0.15, 1]         # one more element than labels
+  detection_labels: ["<1%", "1-5%", "5-10%", "10-15%", ">15%"]
+
+## ----------------------------------------------------------------------------
+## 6. Q3 NORMALIZATION (stage `preprocess`, QC exports only)
+## ----------------------------------------------------------------------------
+
+normalization:
+  method: "quant"                             # "quant" = upper-quartile (Q3)
+  desired_quantile: 0.75
+
+## ----------------------------------------------------------------------------
+## 7. SPATIALEXPERIMENT CONVERSION (stage `spe`)
+## ----------------------------------------------------------------------------
+
+spe:
+  negative_probe_source_name: "Negative Probe"  # GeomxTools name of the negative probe
+  negative_probe_target_name: "NegProbe-WTX"    # name required by standR
+  patient_source_column: "slide.name"          # -> anonymized "Patient" (Pt_01, Pt_02 ...)
+  scan_id_column: "Scan_ID"                    # -> "Scan" (Scan_01, Scan_02 ...)
+  patient_label_prefix: "Pt"
+  biology_columns: ["Group", "Segment"]        # pasted into "biology"
+  biology_separator: "_"
+  use_real_coordinates: false                  # false = placeholder coordinates 1, 2, 3 ...
+  coordinate_x_column: null
+  coordinate_y_column: null
+
+## ----------------------------------------------------------------------------
+## 8. DIAGNOSTICS + BATCH CORRECTION (stage `batch`)
+## ----------------------------------------------------------------------------
+
+normalization_standR:
+  method: "TMM"                               # "TMM" or "upperquartile"; feeds DEG and deconvolution
+
+dimensionality_reduction:
+  seed: 100                                   # also seeds GSEA permutations
+
+batch_correction:
+  perform: true                               # also requires batch_column to exist in the data
+  batch_column: "Batch"
+  factor_of_interest: "Group"                 # biology preserved by RUV4
+  sample_info_first_column: "Patient"         # alluvial plot: first -> second -> comparison column
+  sample_info_column: "Segment"
+  ncg_top_n: 100                              # negative control genes for RUV4
+  k: "auto"                                   # RUV4 factors: "auto" (best silhouette) or an integer
+  apply_limma_residual_correction: true       # extra limma::removeBatchEffect() pass
+
+## ----------------------------------------------------------------------------
+## 9. DIFFERENTIAL EXPRESSION + GSEA (stage `deg`)
+## ----------------------------------------------------------------------------
+
+comparisons:
+  column: ["Group"]                           # one or more columns; the first is also used to colour plots
+  mode: "all_pairs"                           # "all_pairs" or "manual"
+  include_levels: []                          # restrict levels (all_pairs mode)
+  exclude_levels: []
+  min_samples_per_group: 2                    # per segment; smaller comparisons are skipped
+  manual_pairs: {}                            # manual mode: name: [test_group, reference_group]
+
+segments:                                     # Segment values analysed separately
+  - "S100B"
+  - "PanCK"
+
+design:
+  temp_column_name: "coltest"                 # internal model column name
+  include_ruv_factors: false                  # add ruv_W1..3 as covariates
+
+thresholds:
+  p_cutoff: 0.1                               # adj.P.Val for significant genes
+  fc_soft: 0.57                               # |logFC| for significant genes / GSEA input
+  fc_hard: 1.5                                # extra volcano guide line
+  top_genes_volcano: 15
+  gsea_gene_pvalue_filter: 0.05               # P.Value filter for genes entering GSEA
+  gsea_pvalue_cutoff: 0.05
+  pathway_padj_cutoff: 0.1                    # pathways shown in dotplots
+  top_n_pathways: 7
+
+enrichment:
+  organism_db: "org.Hs.eg.db"                 # org.Mm.eg.db for mouse (install it in the env)
+  ontology: ["BP", "MF", "CC"]                # GO ontologies
+  kegg_organism: "hsa"                        # KEGG code ("mmu" for mouse); needs internet
+
+## ----------------------------------------------------------------------------
+## 10. PLOTTING
+## ----------------------------------------------------------------------------
+
+plotting:
+  col_by: "Segment"                           # colour/facet of QC histograms
+  segment: {}                                 # optional colours, e.g. {"Tumor": "#E41A1C"}
+
+plot:
+  volcano_xlim: [-4, 4]
+  volcano_ylim: [0, 11]
+
+## ----------------------------------------------------------------------------
+## 11. DECONVOLUTION (stage `deconv`)
+## To leave deconvolution out of the report, delete this whole section
+## (deconvolution, deconvolution_stats, deconvolution_gsva).
+## ----------------------------------------------------------------------------
+
+deconvolution:
+  run:
+    batch_corrected: false                    # needs RUV factors from stage `batch`
+    no_batch_correction: true
+    export_cibersort: true                    # signature/mixture files for CIBERSORT
+  signature:
+    data_name: "safeTME"                      # SpatialDecon built-in reference (18 cell types)
+    cell_types_subset: []                     # [] = all cell types
+  ruv_prefix: "ruv_"
+  export_columns:                             # proportions.txt column: annotation column
+    segment: "Segment"                        # `segment` is required for the statistics
+    Group: "Group"
+  use_custom_palette: false                   # true = colours below (missing cell types grey)
+  custom_palette:
+    T.CD4.naive: "#E69F00"
+    T.CD4.memory: "#56B4E9"
+    T.CD8.naive: "#009E73"
+    T.CD8.memory: "#F0E442"
+    Treg: "#0072B2"
+    B.naive: "#D55E00"
+    B.memory: "#CC79A7"
+    NK: "#999999"
+    macrophages: "#E41A1C"
+    monocytes.C: "#377EB8"
+    monocytes.NC.I: "#4DAF4A"
+    mDCs: "#984EA3"
+    pDCs: "#FF7F00"
+    neutrophils: "#A65628"
+    mast: "#F781BF"
+    plasma: "#999999"
+    endothelial.cells: "#66C2A5"
+    fibroblasts: "#FC8D62"
+
+deconvolution_stats:
+  grouping_columns: ["Group", "Segment"]      # 2 levels: Wilcoxon; >2 levels: Kruskal-Wallis
+  alpha: 0.05                                 # also used by deconvolution_gsva
+  plots_per_page: 6
+  segment_pair_comparison:                    # two segments compared on summed cell types
+    enabled: false
+    segments: []                              # exactly two, e.g. ["CD68", "PanCK"]
+    cell_type_groups: {}                      # e.g. T_cells: ["T.CD4.memory", "T.CD8.memory", "Treg"]
+    test_alternative: {}                      # per group: "two.sided" (default), "greater", "less"
+
+deconvolution_gsva:
+  signature_file: "resources/signatures/Jerby_Arnon_signature.xlsx"   # one column per signature
+  signature_start_row: 2                      # row with the signature names
+  method: "gsva"                              # "gsva", "ssgsea", "zscore" or "plage"
+  kcdf: "Poisson"                             # "Poisson" for counts/CPM, "Gaussian" for log data
+  min_sz: 3
+  max_sz: 500
+  segment_test_enabled: true                  # pairwise Wilcoxon between segments
+  heatmap_annotation_columns: ["Segment", "Group"]
+  heatmap_scale: "row"                        # "row", "column" or "none"

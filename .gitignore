@@ -1,0 +1,25 @@
+# Snakemake state, run locks and built conda environments
+.snakemake/
+.bulk2spot_locks/
+
+# Tutorial data and results (re-created by the download script / the pipeline)
+tests/tutorial/data/
+tests/tutorial/output/
+
+# Project outputs, if you keep them inside the repository
+output/
+results/
+logs/
+
+# Python / R
+__pycache__/
+*.py[cod]
+.Rhistory
+.RData
+.Rproj.user/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

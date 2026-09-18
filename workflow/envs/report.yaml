@@ -1,0 +1,12 @@
+# Lightweight environment for the HTML report (generate_report.py).
+# Kept separate from the analysis environment so that changing report
+# dependencies never forces a re-run of the analysis rules.
+name: bulk2spot-report
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pandas=2.3
+  - numpy=2.2
+  - plotly=6.9
+  - openpyxl

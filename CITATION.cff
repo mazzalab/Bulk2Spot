@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use Bulk2Spot, please cite it as below, together with the tools listed in docs/methods.md."
+title: "Bulk2Spot: a Snakemake workflow for NanoString GeoMx DSP spatial transcriptomics"
+abstract: >-
+  Bulk2Spot processes GeoMx DSP RNA data from raw DCC/PKC/annotation files through
+  segment and probe QC, normalization, optional RUV4 batch correction, limma-voom
+  differential expression, GO/KEGG gene set enrichment, SpatialDecon cell-type
+  deconvolution and GSVA signature scoring, into a self-contained HTML report.
+authors:
+  - family-names: "<Surname>"
+    given-names: "<Name>"
+# Add all contributors before publishing.
+version: 0.1.0
+license: MIT
+repository-code: "https://github.com/<OWNER>/Bulk2Spot"
+keywords:
+  - spatial-transcriptomics
+  - geomx
+  - nanostring
+  - snakemake
+  - differential-expression
+  - deconvolution
+  - bioinformatics
