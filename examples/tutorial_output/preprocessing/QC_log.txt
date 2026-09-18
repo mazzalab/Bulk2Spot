@@ -1,0 +1,8 @@
+Step	Features	Samples
+Raw data (loaded)	18642	235
+After Segment QC	18642	212
+After Probe QC	18641	212
+After aggregateCounts (gene level)	18504	212
+After segment detection-rate filter	18504	212
+After gene detection-rate filter	9922	212
+After normalization	9922	212

@@ -1,0 +1,55 @@
+segment	celltype	pvalue
+Geometric Segment	macrophages	5.34819576713446e-07
+Geometric Segment	mast	5.14519385433159e-05
+Geometric Segment	B.naive	0.300534454335462
+Geometric Segment	B.memory	8.62287505058868e-08
+Geometric Segment	plasma	4.61054699824543e-10
+Geometric Segment	T.CD4.naive	0.00258859644769072
+Geometric Segment	T.CD4.memory	0.98912028225287
+Geometric Segment	T.CD8.naive	0.00163778924017802
+Geometric Segment	T.CD8.memory	0.317296785785615
+Geometric Segment	NK	0.0901600399479622
+Geometric Segment	pDCs	0.107606208396743
+Geometric Segment	mDCs	5.65669827114764e-08
+Geometric Segment	monocytes.C	0.141865593896018
+Geometric Segment	monocytes.NC.I	1.3388178229286e-09
+Geometric Segment	neutrophils	6.34455526663146e-11
+Geometric Segment	Treg	0.0088716326360407
+Geometric Segment	endothelial.cells	3.55771708705873e-12
+Geometric Segment	fibroblasts	0.377019717462115
+PanCK+	macrophages	0.0357082473443648
+PanCK+	mast	0.772168101273486
+PanCK+	B.naive	0.268715164685934
+PanCK+	B.memory	0.00209548154002891
+PanCK+	plasma	0.143483953298147
+PanCK+	T.CD4.naive	0.830230735672999
+PanCK+	T.CD4.memory	0.385546631571102
+PanCK+	T.CD8.naive	0.0324009165700362
+PanCK+	T.CD8.memory	0.727771349096417
+PanCK+	NK	0.0648931520123478
+PanCK+	pDCs	0.840910239587887
+PanCK+	mDCs	NA
+PanCK+	monocytes.C	NA
+PanCK+	monocytes.NC.I	0.00519367100582619
+PanCK+	neutrophils	0.951394402393753
+PanCK+	Treg	0.0184494164632685
+PanCK+	endothelial.cells	0.158200982440476
+PanCK+	fibroblasts	0.000295495821926155
+PanCK-	macrophages	0.520959027135024
+PanCK-	mast	0.434606263831988
+PanCK-	B.naive	0.00260110481652794
+PanCK-	B.memory	0.039016313406583
+PanCK-	plasma	0.56937302788649
+PanCK-	T.CD4.naive	0.471622566808897
+PanCK-	T.CD4.memory	0.254840955804296
+PanCK-	T.CD8.naive	0.687698062618307
+PanCK-	T.CD8.memory	0.801397818594801
+PanCK-	NK	0.710010354699902
+PanCK-	pDCs	0.0973226799247819
+PanCK-	mDCs	0.804062282432711
+PanCK-	monocytes.C	NA
+PanCK-	monocytes.NC.I	0.000171028936167412
+PanCK-	neutrophils	0.122501128472219
+PanCK-	Treg	0.863407485853723
+PanCK-	endothelial.cells	0.00248581716862691
+PanCK-	fibroblasts	0.000799296178872116

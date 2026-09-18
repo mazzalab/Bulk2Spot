@@ -12,7 +12,7 @@ authors:
 # Add all contributors before publishing.
 version: 0.1.0
 license: MIT
-repository-code: "https://github.com/<OWNER>/Bulk2Spot"
+repository-code: "https://github.com/mazzalab/Bulk2Spot"
 keywords:
   - spatial-transcriptomics
   - geomx

@@ -54,7 +54,7 @@ flowchart LR
 
 ```bash
 # 1. Get the code
-git clone https://github.com/<OWNER>/Bulk2Spot.git
+git clone https://github.com/mazzalab/Bulk2Spot.git
 cd Bulk2Spot
 
 # 2. Create and activate the launcher environment (Snakemake)
@@ -76,6 +76,9 @@ On a PBS cluster, replace the last command with:
 The first run builds the analysis environments automatically (R, Bioconductor, standR). This takes a
 while, and only happens once. Open `tests/tutorial/output/results/report/bulk2spot_report.html` in a
 browser when it is done.
+
+Want to see the results first? [`examples/`](examples/README.md) has the outputs of this tutorial run:
+the HTML report, QC and PCA figures, DEG/GSEA tables and plots, and deconvolution results.
 
 ## Analysing your own data
 
@@ -99,6 +102,7 @@ cp config/config.yaml my_project.yaml       # 1. copy the template
 | [Outputs](docs/outputs.md) | Output tree and what each file contains |
 | [Methods](docs/methods.md) | The analysis, step by step, with references |
 | [Tutorial](tests/tutorial/README.md) | End-to-end run on NanoString's public kidney dataset |
+| [Example outputs](examples/README.md) | The tutorial's report, figures and tables, ready to browse |
 
 ## Repository layout
 
@@ -114,6 +118,7 @@ Bulk2Spot/
 │   └── envs/                 # conda environments + tested pin files + standR post-deploy
 ├── resources/signatures/     # bundled gene signatures (Jerby-Arnon et al. 2018)
 ├── tests/tutorial/           # tutorial config, data download script, walkthrough
+├── examples/                 # example outputs from the tutorial run
 └── docs/                     # documentation
 ```
 

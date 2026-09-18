@@ -19,6 +19,9 @@ Everything is written under `outputdir`:
 **Start with `results/report/bulk2spot_report.html`.** It is self-contained: open it in any browser,
 or send it to collaborators.
 
+To see real examples of these files, look in [`examples/tutorial_output/`](../examples/README.md),
+which contains the tutorial run's outputs.
+
 File types: `.rds` files are R objects (`readRDS()`), `.txt` files are tab-separated tables, and
 `.xlsx` files are Excel tables.
 

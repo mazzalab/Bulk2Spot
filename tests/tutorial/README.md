@@ -126,6 +126,9 @@ deconvolution composition and GSVA heatmap), and no "figure not available" place
 **Run time**: about 20 minutes wall time on a PBS cluster (one job per rule, including queueing),
 once the environments exist.
 
+A copy of this run's report, figures and summary tables is in
+[`examples/tutorial_output/`](../../examples/README.md), so you can compare your results with it.
+
 ## Cleaning up
 
 The downloaded raw data (`data/`) and the pipeline output (`output/`) are git-ignored -- delete them

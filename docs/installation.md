@@ -33,7 +33,7 @@ conda config --set channel_priority strict
 ## 1. Get the code
 
 ```bash
-git clone https://github.com/<OWNER>/Bulk2Spot.git
+git clone https://github.com/mazzalab/Bulk2Spot.git
 cd Bulk2Spot
 ```
 

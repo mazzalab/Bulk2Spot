@@ -1,0 +1,4 @@
+Column	Segment	Comparison	Group_Test	Group_Ref	N_Test	N_Ref	N_tested	N_up	N_down	N_GO_BP_terms	N_KEGG_terms
+class	Geometric Segment	DKD_vs_normal	DKD	normal	68	66	9921	279	264	120	0
+class	PanCK+	DKD_vs_normal	DKD	normal	20	17	9921	398	393	229	31
+class	PanCK-	DKD_vs_normal	DKD	normal	24	17	9921	86	136	69	1

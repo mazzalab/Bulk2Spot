@@ -1,0 +1,2 @@
+# Example outputs are documentation: keep them out of GitHub's language statistics
+examples/** linguist-documentation
