@@ -41,7 +41,7 @@ if [[ ! -s "${PKC_DIR}/Hsa_WTA_v1.0.pkc" ]]; then
 fi
 
 echo "== DCC files (239 segments, ${PARALLEL} parallel downloads) =="
-xargs -a "${SCRIPT_DIR}/dcc_filenames.txt" -P "${PARALLEL}" -I{} \
+cat "${SCRIPT_DIR}/dcc_filenames.txt" | xargs -P "${PARALLEL}" -I{} \
   bash -c 'fetch "$0/dccs/$1" "$2/$1"' "${RAW_BASE}" {} "${DCC_DIR}"
 
 n_ok=$(find "${DCC_DIR}" -name "*.dcc" | wc -l)
