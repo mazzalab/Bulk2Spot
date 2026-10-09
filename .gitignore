@@ -23,3 +23,9 @@ __pycache__/
 Thumbs.db
 .idea/
 .vscode/
+.claude/
+.claude-flow/
+.swarm/
+agentdb.rvf
+agentdb.rvf.lock
+ruvector.db

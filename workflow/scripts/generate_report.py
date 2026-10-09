@@ -55,6 +55,21 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
 LOGO_MAIN_FILL = 'fill="#0E7C7B"'
 LOGO_ACCENT_FILL = 'fill="#F2994A"'
 
+VENDOR_DIR = Path(__file__).parent / "vendor"
+
+
+def load_vendor_js() -> str:
+    """jsPDF + svg2pdf.js, inlined -- see vendor/NOTICE.md. Enables the
+    per-figure "Download PDF" button without a network call or a second
+    file shipped alongside the report. Load order matters (svg2pdf.js
+    extends the jsPDF global), hence jspdf first."""
+    parts = []
+    for name in ("jspdf.umd.min.js", "svg2pdf.umd.min.js"):
+        path = VENDOR_DIR / name
+        if path.is_file():
+            parts.append(path.read_text(encoding="utf-8"))
+    return "\n".join(parts)
+
 
 def load_logo(path: Optional[str]) -> tuple:
     """Return (inline header SVG, favicon <link>), or empty strings if there is no logo."""
@@ -136,7 +151,18 @@ def missing_plot(label):
 
 
 def fig_wrap(div_html, caption=None):
-    fig = f'<div class="plot">{div_html}</div>'
+    # The chart div Plotly wrote always carries the id passed to to_div(): reuse
+    # it to target this one figure for export.
+    m = re.search(r'id="([^"]+)"', div_html)
+    btns = ""
+    if m:
+        div_id = m.group(1)
+        btns = (
+            '<div class="fig-export-btns">'
+            f'<button type="button" class="fig-print-btn" onclick="b2sDownloadFigurePDF(\'{div_id}\')">Download PDF</button>'
+            '</div>'
+        )
+    fig = f'<div class="plot">{btns}{div_html}</div>'
     if caption:
         fig = f"<figure>{fig}<figcaption>{caption}</figcaption></figure>"
     return fig
@@ -150,8 +176,8 @@ def plot_qc_funnel(qc_log: pd.DataFrame, div_id: str):
         customdata=qc_log["Features"],
         hovertemplate="<b>%{x}</b><br>Segments: %{y}<br>Features: %{customdata}<extra></extra>",
     ))
-    fig.update_xaxes(tickangle=-30, title="")
-    fig.update_yaxes(title="Segments remaining")
+    fig.update_xaxes(tickangle=-30, title="", showgrid=False)
+    fig.update_yaxes(title="Segments remaining", showgrid=False)
     _layout(fig, height=380)
     return fig_wrap(to_div(fig, div_id), "Segments remaining after each preprocessing step")
 
@@ -163,8 +189,8 @@ def plot_feature_funnel(qc_log: pd.DataFrame, div_id: str):
         x=qc_log["Step"], y=qc_log["Features"], marker_color="#ae3b2e",
         hovertemplate="<b>%{x}</b><br>Features: %{y}<extra></extra>",
     ))
-    fig.update_xaxes(tickangle=-30, title="")
-    fig.update_yaxes(title="Features (probes/genes) remaining")
+    fig.update_xaxes(tickangle=-30, title="", showgrid=False)
+    fig.update_yaxes(title="Features (probes/genes) remaining", showgrid=False)
     _layout(fig, height=380)
     return fig_wrap(to_div(fig, div_id), "Features remaining after each preprocessing step")
 
@@ -177,8 +203,8 @@ def plot_qc_flags(qc_summary: pd.DataFrame, div_id: str):
     fig.add_trace(go.Bar(x=d.index, y=d["Pass"], name="Pass", marker_color="#1f6f6b"))
     fig.add_trace(go.Bar(x=d.index, y=d["Warning"], name="Warning", marker_color="#ae3b2e"))
     fig.update_layout(barmode="stack")
-    fig.update_xaxes(tickangle=-30, title="")
-    fig.update_yaxes(title="Segments")
+    fig.update_xaxes(tickangle=-30, title="", showgrid=False)
+    fig.update_yaxes(title="Segments", showgrid=False)
     _layout(fig, height=380)
     return fig_wrap(to_div(fig, div_id), "Segment QC flag outcomes by check (a segment can fail more than one check)")
 
@@ -193,8 +219,8 @@ def plot_composition(pheno: pd.DataFrame, column: str, div_id: str):
         x=counts.index.astype(str), y=counts.values, marker_color="#1f6f6b",
         hovertemplate="<b>%{x}</b><br>%{y} segment(s)<extra></extra>",
     ))
-    fig.update_xaxes(tickangle=-30, title="")
-    fig.update_yaxes(title="Segments")
+    fig.update_xaxes(tickangle=-30, title="", showgrid=False)
+    fig.update_yaxes(title="Segments", showgrid=False)
     _layout(fig, height=360)
     return fig_wrap(to_div(fig, div_id), f"Segments by {column}")
 
@@ -233,8 +259,8 @@ def plot_pca(pca_result, color_col: str, div_id: str):
             text=sub.index,
             hovertemplate=f"<b>%{{text}}</b><br>{color_col}={g}<br>PC1=%{{x:.2f}}, PC2=%{{y:.2f}}<extra></extra>",
         ))
-    fig.update_xaxes(title=f"PC1 ({var_explained[0]:.1f}%)", zeroline=True, zerolinecolor="#e2ddd0")
-    fig.update_yaxes(title=f"PC2 ({var_explained[1]:.1f}%)", zeroline=True, zerolinecolor="#e2ddd0")
+    fig.update_xaxes(title=f"PC1 ({var_explained[0]:.1f}%)", zeroline=True, zerolinecolor="#e2ddd0", showgrid=False)
+    fig.update_yaxes(title=f"PC2 ({var_explained[1]:.1f}%)", zeroline=True, zerolinecolor="#e2ddd0", showgrid=False)
     _layout(fig, height=440)
     return fig_wrap(to_div(fig, div_id), f"PCA of log2(Q3-normalized) expression, colored by {color_col}")
 
@@ -277,8 +303,8 @@ def plot_umap(umap_df, color_col: str, div_id: str):
             text=sub.index,
             hovertemplate=f"<b>%{{text}}</b><br>{color_col}={g}<br>UMAP1=%{{x:.2f}}, UMAP2=%{{y:.2f}}<extra></extra>",
         ))
-    fig.update_xaxes(title="UMAP1", zeroline=True, zerolinecolor="#e2ddd0")
-    fig.update_yaxes(title="UMAP2", zeroline=True, zerolinecolor="#e2ddd0")
+    fig.update_xaxes(title="UMAP1", zeroline=True, zerolinecolor="#e2ddd0", showgrid=False)
+    fig.update_yaxes(title="UMAP2", zeroline=True, zerolinecolor="#e2ddd0", showgrid=False)
     _layout(fig, height=440)
     return fig_wrap(to_div(fig, div_id), f"UMAP of the post-normalization SpatialExperiment, colored by {color_col}")
 
@@ -297,7 +323,7 @@ def plot_volcano(deg: pd.DataFrame, fc_soft: float, p_cutoff: float, div_id: str
         sub = d[d["status"] == status]
         if sub.empty:
             continue
-        fig.add_trace(go.Scattergl(
+        fig.add_trace(go.Scatter(
             x=sub["logFC"], y=sub["neglog10padj"], mode="markers", name=status,
             marker=dict(size=5, color=PALETTE.get(status, "#999"), opacity=0.65),
             text=sub[label_col],
@@ -308,8 +334,8 @@ def plot_volcano(deg: pd.DataFrame, fc_soft: float, p_cutoff: float, div_id: str
     fig.add_vline(x=fc_soft, line_dash="dash", line_color="#9b9384")
     fig.add_vline(x=-fc_soft, line_dash="dash", line_color="#9b9384")
     fig.add_hline(y=-np.log10(p_cutoff), line_dash="dash", line_color="#9b9384")
-    fig.update_xaxes(title="log2 fold change")
-    fig.update_yaxes(title="-log10 adjusted p-value")
+    fig.update_xaxes(title="log2 fold change", showgrid=False)
+    fig.update_yaxes(title="-log10 adjusted p-value", showgrid=False)
     _layout(fig, height=480, title=dict(text=title, font=dict(size=13)))
     return fig_wrap(to_div(fig, div_id), f"Volcano plot &mdash; {html.escape(title)} (hover for gene detail; drag to zoom)")
 
@@ -330,8 +356,8 @@ def plot_gsea(gsea: pd.DataFrame, top_n: int, div_id: str, label: str):
         hovertemplate="<b>%{y}</b><br>NES=%{x:.2f}<br>padj=%{customdata[0]:.3g}<br>gene set size=%{customdata[1]:.0f}<extra></extra>",
     ))
     fig.add_vline(x=0, line_color="#9b9384")
-    fig.update_xaxes(title="Normalized enrichment score (NES)")
-    fig.update_yaxes(tickfont=dict(size=9), automargin=True)
+    fig.update_xaxes(title="Normalized enrichment score (NES)", showgrid=False)
+    fig.update_yaxes(tickfont=dict(size=9), automargin=True, showgrid=False)
     _layout(fig, height=max(260, 24 * len(d)), margin=dict(l=320, r=30, t=20, b=50))
     return fig_wrap(to_div(fig, div_id), f"Top {label} pathways by NES (positive = up in test group, negative = up in reference group)")
 
@@ -347,8 +373,8 @@ def plot_celltype_stacked_bar(prop: pd.DataFrame, celltype_cols: List[str], sort
     for i, ct in enumerate(celltype_cols):
         fig.add_trace(go.Bar(x=d["ROI"].astype(str), y=d[ct], name=ct, marker_color=CATEGORICAL[i % len(CATEGORICAL)]))
     fig.update_layout(barmode="stack")
-    fig.update_xaxes(title="ROI", tickfont=dict(size=8), tickangle=-60)
-    fig.update_yaxes(title="Estimated proportion")
+    fig.update_xaxes(title="ROI", tickfont=dict(size=8), tickangle=-60, showgrid=False)
+    fig.update_yaxes(title="Estimated proportion", showgrid=False)
     _layout(fig, height=480, legend=dict(orientation="h", y=-0.55, font=dict(size=9)))
     return fig_wrap(to_div(fig, div_id), "Estimated cell-type composition per ROI (SpatialDecon, safeTME signature)")
 
@@ -363,8 +389,8 @@ def plot_celltype_mean_by_group(prop: pd.DataFrame, celltype_cols: List[str], gr
     for i, ct in enumerate(celltype_cols):
         fig.add_trace(go.Bar(x=means.index.astype(str), y=means[ct], name=ct, marker_color=CATEGORICAL[i % len(CATEGORICAL)]))
     fig.update_layout(barmode="stack")
-    fig.update_xaxes(title=group_col)
-    fig.update_yaxes(title="Mean estimated proportion")
+    fig.update_xaxes(title=group_col, showgrid=False)
+    fig.update_yaxes(title="Mean estimated proportion", showgrid=False)
     _layout(fig, height=420, legend=dict(orientation="h", y=-0.4, font=dict(size=9)))
     return fig_wrap(to_div(fig, div_id), f"Mean cell-type composition by {group_col}")
 
@@ -455,11 +481,23 @@ table.data-table th { color: var(--muted); font-weight: 700; font-size: .72rem; 
                        position: sticky; top: 0; background: var(--bg); }
 table.data-table tr:hover { background: var(--card); }
 .table-scroll { overflow-x: auto; max-height: 480px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; }
-figure { margin: 1.5rem 0; text-align: center; counter-increment: figure; }
+figure { margin: 1.5rem 0; text-align: center; counter-increment: figure; position: relative; }
 figcaption { color: var(--muted); font-size: .8rem; margin-top: .5rem; font-family: var(--serif); font-style: italic; }
 figcaption::before { content: "Figure " counter(figure) ". "; font-weight: 700; font-style: normal; color: var(--fg); }
 .missing { color: var(--muted); font-style: italic; }
-.plot { width: 100%; }
+.plot { width: 100%; position: relative; }
+.fig-export-btns { position: absolute; top: .3rem; right: .3rem; z-index: 5; display: flex; gap: .3rem; }
+.fig-print-btn {
+  font-family: var(--sans); font-size: .68rem; font-weight: 600;
+  background: var(--card); color: var(--muted); border: 1px solid var(--border);
+  border-radius: 4px; padding: .2rem .55rem; cursor: pointer;
+}
+.fig-print-btn:hover, .fig-print-btn:focus-visible { color: var(--accent); border-color: var(--accent); }
+@media print {
+  html, body { background: #ffffff !important; }
+  .fig-export-btns, .theme-toggle, nav.toc { display: none !important; }
+  body.b2s-printing-figure .b2s-print-target { margin: 0; }
+}
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
 @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
 .toc { display: flex; flex-wrap: wrap; gap: .4rem .9rem; font-family: var(--sans); font-size: .85rem; }
@@ -553,6 +591,97 @@ function b2sReportSetTheme(theme) {
     });
   });
 })();
+function b2sPlotRelayout(gd, bgcolor, c) {
+  if (!gd || !gd.layout || typeof Plotly === 'undefined') return;
+  var update = { paper_bgcolor: bgcolor, plot_bgcolor: bgcolor, 'font.color': c.font };
+  if (gd.layout.legend) update['legend.font.color'] = c.font;
+  Object.keys(gd.layout).forEach(function (key) {
+    if (/^(xaxis|yaxis)\d*$/.test(key)) {
+      update[key + '.gridcolor'] = c.grid;
+      update[key + '.zerolinecolor'] = c.zero;
+      update[key + '.linecolor'] = c.line;
+      update[key + '.tickfont.color'] = c.font;
+    }
+  });
+  try { Plotly.relayout(gd, update); } catch (e) {}
+}
+function b2sHideSiblingsUpTo(node, root) {
+  // A CSS ":not(.target)" rule at one DOM level can't reach a figure nested
+  // inside a layout wrapper (e.g. .grid-2): hiding the wrapper (not the
+  // target itself) hides every descendant, including the target. Walk the
+  // real ancestor chain instead and hide only true siblings at each level,
+  // so the target and everything above it to <body> stay visible.
+  var hidden = [];
+  while (node && node !== root) {
+    var parent = node.parentNode;
+    if (parent) {
+      Array.prototype.forEach.call(parent.children, function (sib) {
+        if (sib !== node) {
+          hidden.push([sib, sib.style.display]);
+          sib.style.display = "none";
+        }
+      });
+    }
+    node = parent;
+  }
+  return hidden;
+}
+function b2sPrintFigure(divId) {
+  // The chart div's own transparent background is meant to show the page's
+  // --bg underneath (for theming) -- which is near-black in dark mode and
+  // does not reliably disappear when printed, so force an opaque white plot
+  // just for the print, then restore whatever theme was active.
+  var gd = document.getElementById(divId);
+  var fig = gd ? gd.closest('figure') : null;
+  if (!fig) { window.print(); return; }
+  b2sPlotRelayout(gd, '#ffffff', b2sReportColors(false));
+  fig.classList.add('b2s-print-target');
+  document.body.classList.add('b2s-printing-figure');
+  var hidden = b2sHideSiblingsUpTo(fig, document.body);
+  function cleanup() {
+    hidden.forEach(function (pair) { pair[0].style.display = pair[1]; });
+    fig.classList.remove('b2s-print-target');
+    document.body.classList.remove('b2s-printing-figure');
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    b2sPlotRelayout(gd, 'rgba(0,0,0,0)', b2sReportColors(dark));
+    window.removeEventListener('afterprint', cleanup);
+  }
+  window.addEventListener('afterprint', cleanup);
+  window.print();
+}
+function b2sDownloadFigurePDF(divId) {
+  // Vector PDF, direct download, no print dialog: render this one figure's
+  // merged SVG (Plotly.toImage already does that merge -- same snapshot the
+  // modebar camera button uses) and hand it to svg2pdf.js/jsPDF (vendored,
+  // inlined above). Falls back to the print button if anything is missing.
+  var gd = document.getElementById(divId);
+  var hasLibs = typeof Plotly !== 'undefined' && window.jspdf && window.jspdf.jsPDF;
+  if (!gd || !hasLibs) { b2sPrintFigure(divId); return; }
+  var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var w = (gd._fullLayout && gd._fullLayout.width) || gd.clientWidth || 800;
+  var h = (gd._fullLayout && gd._fullLayout.height) || gd.clientHeight || 450;
+  b2sPlotRelayout(gd, '#ffffff', b2sReportColors(false));
+  Plotly.toImage(gd, { format: 'svg', width: w, height: h }).then(function (dataUrl) {
+    b2sPlotRelayout(gd, 'rgba(0,0,0,0)', b2sReportColors(dark));
+    var svgText = decodeURIComponent(dataUrl.split(',').slice(1).join(','));
+    var doc = new window.jspdf.jsPDF({
+      unit: 'pt', format: [w, h], orientation: w >= h ? 'landscape' : 'portrait',
+    });
+    // Plotly renders negative tick labels with the true Unicode minus sign
+    // (U+2212), which isn't in the standard 14 PDF fonts' WinAnsiEncoding --
+    // svg2pdf.js garbles or drops it. Swap it for a plain ASCII hyphen, which
+    // every PDF font supports and reads identically.
+    svgText = svgText.replace(/−/g, '-');
+    var svgEl = new DOMParser().parseFromString(svgText, 'image/svg+xml').documentElement;
+    return doc.svg(svgEl, { x: 0, y: 0, width: w, height: h }).then(function () {
+      doc.save((divId || 'bulk2spot_figure') + '.pdf');
+    });
+  }).catch(function (err) {
+    b2sPlotRelayout(gd, 'rgba(0,0,0,0)', b2sReportColors(dark));
+    console.error('Bulk2Spot: PDF export failed, falling back to print.', err);
+    b2sPrintFigure(divId);
+  });
+}
 """
 
 THEME_TOGGLE_BUTTON = """
@@ -803,7 +932,14 @@ def build_html(args: argparse.Namespace) -> str:
             gsea_kegg = read_xlsx(cmp_dir / f"GSEA_KEGG_results_{comparison}_{segment}.xlsx")
 
             slug = f"{segment}-{comparison}".replace(" ", "_")
-            title = f"{segment} &mdash; {comparison}"
+            # A real em dash, not the &mdash; HTML entity: this title also
+            # becomes Plotly's chart title text (plot_volcano below), which
+            # Plotly writes verbatim into the exported SVG's <text> node --
+            # &mdash; isn't a valid XML entity (only amp/lt/gt/apos/quot are),
+            # so the "Download PDF" button's strict XML parse of that SVG
+            # failed there, silently producing a near-empty PDF. A literal
+            # UTF-8 "—" is valid in both the HTML page and the SVG/XML export.
+            title = f"{segment} — {comparison}"
 
             stat_row = f"""
 <div class="stat-grid">
@@ -931,9 +1067,12 @@ Plots are interactive: hover for detail, drag to zoom, double-click to reset, cl
 """)
 
     plotlyjs_script = f"<script>{get_plotlyjs()}</script>"
+    vendor_js = load_vendor_js()
+    vendor_script = f"<script>{vendor_js}</script>" if vendor_js else ""
 
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
+{vendor_script}
 <script>{THEME_SCRIPT}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{html.escape(args.project_name)} &mdash; Bulk2Spot report</title>
